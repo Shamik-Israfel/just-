@@ -1,3 +1,4 @@
 #!/bin/bash
-apt-get update && apt-get install -y python3-dev build-essential
-pip install -r requirements.txt
+# Force binary distribution installation
+pip install --upgrade pip setuptools wheel
+pip install --prefer-binary -r requirements.txt
