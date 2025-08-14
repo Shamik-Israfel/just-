@@ -1,0 +1,19 @@
+{
+  "builds": [
+    {
+      "src": "*/api/*.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.12",
+        "installCommand": "pip install --prefer-binary -r requirements.txt"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/$1"
+    }
+  ]
+}
