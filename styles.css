@@ -1,0 +1,77 @@
+/* Add these to your existing style.css */
+
+/* Dark mode toggle styles */
+.dark {
+    background-color: #1a202c;
+    color: #e2e8f0;
+}
+
+.dark .bg-white {
+    background-color: #2d3748;
+    color: #e2e8f0;
+}
+
+.dark .bg-gray-50 {
+    background-color: #4a5568;
+}
+
+.dark .text-gray-800 {
+    color: #e2e8f0;
+}
+
+.dark .border-gray-200 {
+    border-color: #4a5568;
+}
+
+/* Dashboard styles */
+#buyer-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#orders-table-body tr:hover {
+    background-color: rgba(74, 85, 104, 0.1);
+}
+
+.dark #orders-table-body tr:hover {
+    background-color: rgba(74, 85, 104, 0.5);
+}
+
+/* Checkout modal styles */
+#bkash-details {
+    transition: all 0.3s ease;
+}
+
+/* Invoice styles */
+.invoice-header {
+    border-bottom: 2px solid #2e7d32;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+/* Animation for loading */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Transition effects */
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.5s;
+}
+.fade-enter, .fade-leave-to {
+    opacity: 0;
+}

@@ -1,0 +1,12 @@
+{
+  "name": "krishighor-frontend",
+  "version": "1.0.0",
+  "description": "KrishiGhor - A transparent crop pricing & supply chain web platform for producer and buyer",
+  "scripts": {
+    "start": "python ai_service.py",
+    "build": "echo 'No build needed for static site'"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.0.0"
+  }
+}

@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-50 dark:bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishiGhor - Bangladesh Crop Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            600: '#2e7d32',
+                            700: '#1b5e20',
+                            800: '#0d4b16',
+                        },
+                        secondary: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        bangla: ['Hind Siliguri', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .crop-card {
+            transition: all 0.3s ease;
+        }
+        .crop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .dark .crop-card {
+            background-color: #2d3748;
+            border-color: #4a5568;
+        }
+        .dark .crop-card:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .grid-view .crop-card {
+            display: flex;
+            flex-direction: column;
+        }
+        .grid-view .crop-image {
+            height: 180px;
+            object-fit: cover;
+        }
+        .list-view .crop-card {
+            display: flex;
+            flex-direction: row;
+            max-width: 100%;
+        }
+        .list-view .crop-image-container {
+            width: 200px;
+            flex-shrink: 0;
+        }
+        .list-view .crop-image {
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+        }
+        .list-view .crop-details {
+            flex-grow: 1;
+            padding: 1.5rem;
+        }
+        .ai-recommendation-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .ai-recommendation-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #3b82f6;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .skeleton {
+            background-color: #e2e8f0;
+            border-radius: 4px;
+        }
+        .dark .skeleton {
+            background-color: #4a5568;
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-800 dark:text-gray-200 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-primary-600 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-leaf text-2xl text-secondary-400"></i>
+                <h1 class="text-2xl font-bold">KrishiGhor</h1>
+                <span class="bg-secondary-400 text-primary-800 px-2 py-1 rounded-full text-xs font-bangla">বাংলাদেশ</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full bg-primary-700 hover:bg-primary-800 text-white">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:inline"></i>
+                </button>
+                <button id="dashboard-btn" class="p-2 rounded-full bg-primary-700 hover:bg-primary-800 text-white hidden md:block">
+                    <i class="fas fa-user"></i>
+                </button>
+                <div id="cart-btn" class="relative cursor-pointer">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-secondary-400 text-primary-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hidden">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-12">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-4">Bangladesh's Digital Crop Marketplace</h2>
+            <p class="max-w-2xl mx-auto font-bangla">কৃষকদের সাথে ক্রেতাদের সরাসরি সংযোগ</p>
+            <div class="mt-6 relative max-w-md mx-auto">
+                <input type="text" id="main-search" placeholder="Search crops (rice, jute, vegetables...)" 
+                       class="w-full px-4 py-3 rounded-full text-gray-800 focus:outline-none dark:bg-gray-700 dark:text-white dark:placeholder-gray-300">
+                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-secondary-400 text-primary-800 px-4 py-1 rounded-full hover:bg-secondary-500">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- View Toggle -->
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold">Available Crops</h2>
+            <div class="flex items-center space-x-4">
+                <div class="flex space-x-2">
+                    <button id="grid-view-btn" class="p-2 rounded bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button id="list-view-btn" class="p-2 rounded bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-300">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="mb-8 bg-white p-4 rounded-lg shadow dark:bg-gray-800">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-gray-300">Region</label>
+                    <select id="region-filter" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">All Regions</option>
+                        <option>Dhaka</option>
+                        <option>Chittagong</option>
+                        <option>Khulna</option>
+                        <option>Rajshahi</option>
+                        <option>Sylhet</option>
+                        <option>Barisal</option>
+                        <option>Rangpur</option>
+                        <option>Mymensingh</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-gray-300">Crop Type</label>
+                    <select id="type-filter" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">All Types</option>
+                        <option>Rice</option>
+                        <option>Vegetable</option>
+                        <option>Fruit</option>
+                        <option>Pulse</option>
+                        <option>Oilseed</option>
+                        <option>Fiber</option>
+                        <option>Nut</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-gray-300">Price Range</label>
+                    <select id="price-filter" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="">All Prices</option>
+                        <option value="0-50">৳0 - ৳50</option>
+                        <option value="50-100">৳50 - ৳100</option>
+                        <option value="100-200">৳100 - ৳200</option>
+                        <option value="200-500">৳200 - ৳500</option>
+                        <option value="500-1000">৳500+</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-gray-300">Sort By</label>
+                    <select id="sort-filter" class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="newest">Newest First</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="quantity">Available Quantity</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations Section -->
+        <section id="ai-section" class="mb-12 bg-blue-50 rounded-lg p-6 dark:bg-blue-900 dark:bg-opacity-20">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold flex items-center">
+                    <i class="fas fa-robot text-blue-500 mr-2"></i> AI-Powered Recommendations
+                </h3>
+                <div class="text-sm text-blue-700 dark:text-blue-300">
+                    <i class="fas fa-info-circle mr-1"></i> Based on your browsing and cart items
+                </div>
+            </div>
+            <div id="ai-recommendations" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <!-- Loading skeleton -->
+                <div class="skeleton h-64 rounded-lg animate-pulse"></div>
+                <div class="skeleton h-64 rounded-lg animate-pulse"></div>
+                <div class="skeleton h-64 rounded-lg animate-pulse"></div>
+                <div class="skeleton h-64 rounded-lg animate-pulse"></div>
+                <div class="skeleton h-64 rounded-lg animate-pulse hidden xl:block"></div>
+            </div>
+        </section>
+
+        <!-- Crops Grid View -->
+        <div id="crops-container" class="grid-view grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Loading skeleton -->
+            <div class="skeleton h-80 rounded-lg animate-pulse"></div>
+            <div class="skeleton h-80 rounded-lg animate-pulse"></div>
+            <div class="skeleton h-80 rounded-lg animate-pulse"></div>
+            <div class="skeleton h-80 rounded-lg animate-pulse hidden xl:block"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-8 flex justify-center">
+            <nav class="inline-flex rounded-md shadow">
+                <button id="prev-page" class="px-3 py-1 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="flex">
+                    <button class="page-btn px-3 py-1 border-t border-b border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" data-page="1">1</button>
+                    <button class="page-btn px-3 py-1 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" data-page="2">2</button>
+                    <button class="page-btn px-3 py-1 border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" data-page="3">3</button>
+                </div>
+                <button id="next-page" class="px-3 py-1 rounded-r-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </nav>
+        </div>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50 dark:bg-gray-800">
+        <div class="p-4 border-b flex justify-between items-center dark:border-gray-700">
+            <h3 class="font-bold text-lg dark:text-white">Your Order</h3>
+            <button id="close-cart" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="cart-items" class="p-4 overflow-y-auto h-3/4">
+            <div class="text-center py-12">
+                <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-4 dark:text-gray-600"></i>
+                <p class="text-gray-500 dark:text-gray-400">Your cart is empty</p>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+            <div class="flex justify-between font-bold mb-4 dark:text-white">
+                <span>Total:</span>
+                <span id="cart-total">৳0</span>
+            </div>
+            <button id="checkout-btn" class="w-full bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg">
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-100 py-8 dark:bg-gray-800">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-4 dark:text-white">KrishiGhor</h3>
+                    <p class="text-gray-600 dark:text-gray-300">Bangladesh's premier digital marketplace connecting farmers directly with buyers.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4 dark:text-white">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Home</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Products</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">About Us</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4 dark:text-white">Categories</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Rice</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Vegetables</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Fruits</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400">Jute</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold mb-4 dark:text-white">Contact Us</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center text-gray-600 dark:text-gray-300"><i class="fas fa-map-marker-alt mr-2"></i> Farmgate, Dhaka</li>
+                        <li class="flex items-center text-gray-600 dark:text-gray-300"><i class="fas fa-phone-alt mr-2"></i> +880 1XXX-XXXXXX</li>
+                        <li class="flex items-center text-gray-600 dark:text-gray-300"><i class="fas fa-envelope mr-2"></i> info@krishighor.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t mt-8 pt-6 text-center text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                <p>© 2023 KrishiGhor. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script -->
+    <script>
+        // DOM Elements
+        const cropsContainer = document.getElementById('crops-container');
+        const cartBtn = document.getElementById('cart-btn');
+        const cartSidebar = document.getElementById('cart-sidebar');
+        const closeCart = document.getElementById('close-cart');
+        const cartItemsEl = document.getElementById('cart-items');
+        const cartCount = document.getElementById('cart-count');
+        const cartTotal = document.getElementById('cart-total');
+        const regionFilter = document.getElementById('region-filter');
+        const typeFilter = document.getElementById('type-filter');
+        const priceFilter = document.getElementById('price-filter');
+        const sortFilter = document.getElementById('sort-filter');
+        const mainSearch = document.getElementById('main-search');
+        const aiSection = document.getElementById('ai-section');
+        const aiRecommendations = document.getElementById('ai-recommendations');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const dashboardBtn = document.getElementById('dashboard-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const gridViewBtn = document.getElementById('grid-view-btn');
+        const listViewBtn = document.getElementById('list-view-btn');
+        const prevPageBtn = document.getElementById('prev-page');
+        const nextPageBtn = document.getElementById('next-page');
+        const pageBtns = document.querySelectorAll('.page-btn');
+
+        // State
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let allCrops = [];
+        let currentPage = 1;
+        const itemsPerPage = 12;
+        let totalPages = 1;
+        let currentView = 'grid'; // 'grid' or 'list'
+
+        // API Base URL
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5000' 
+            : '/api';
+
+        // Current User (for demo)
+        const currentUser = {
+            id: 2, // Matches the demo_buyer in database
+            username: 'demo_buyer',
+            email: 'buyer@example.com',
+            user_type: 'buyer'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCrops();
+            renderCrops();
+            updateCartUI();
+            setupEventListeners();
+            getAiRecommendations();
+            
+            // Set initial view
+            setView('grid');
+        });
+
+        // Fetch crops from API
+        async function fetchCrops() {
+            try {
+                showLoading(true);
+                const response = await fetch(`${API_BASE}/crops?page=${currentPage}&per_page=${itemsPerPage}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    allCrops = data.data;
+                    totalPages = Math.ceil(data.total / itemsPerPage);
+                    updatePagination();
+                } else {
+                    showError('Failed to load crops. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Error fetching crops:', error);
+                showError('Failed to load crops. Please check your connection.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Render crops based on current view
+        function renderCrops(crops = allCrops) {
+            if (crops.length === 0) {
+                cropsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-seedling text-4xl text-gray-300 mb-4 dark:text-gray-600"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No crops found matching your filters</p>
+                        <button id="reset-filters" class="mt-4 text-primary-600 hover:text-primary-800 dark:text-primary-400">
+                            <i class="fas fa-redo mr-2"></i> Reset filters
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (currentView === 'grid') {
+                renderGridView(crops);
+            } else {
+                renderListView(crops);
+            }
+        }
+
+        // Render grid view
+        function renderGridView(crops) {
+            cropsContainer.className = 'grid-view grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
+            cropsContainer.innerHTML = crops.map(crop => `
+                <div class="crop-card bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <div class="h-48 bg-gray-100 flex items-center justify-center relative dark:bg-gray-700">
+                        <i class="fas fa-seedling text-4xl text-primary-600 dark:text-primary-400"></i>
+                        ${crop.quantity < 100 ? `
+                            <span class="absolute top-2 right-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full dark:bg-red-900 dark:text-red-200">
+                                Low Stock
+                            </span>
+                        ` : ''}
+                    </div>
+                    <div class="p-4 flex flex-col flex-grow">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg dark:text-white">${crop.name}</h3>
+                            <span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded dark:bg-primary-900 dark:text-primary-200">${crop.type}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">
+                            <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>
+                            ${crop.region}
+                        </p>
+                        <p class="text-sm text-gray-500 mb-4 line-clamp-2 dark:text-gray-400">${crop.description || 'No description available'}</p>
+                        
+                        <div class="mt-auto">
+                            <div class="flex justify-between items-center mb-3">
+                                <div>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Available:</span>
+                                    <span class="block font-medium dark:text-white">${crop.quantity} kg</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Price:</span>
+                                    <span class="block font-bold text-primary-600 dark:text-primary-400">৳${crop.price}</span>
+                                </div>
+                            </div>
+                            <button class="add-to-cart w-full bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center"
+                                    data-id="${crop.id}">
+                                <i class="fas fa-cart-plus mr-2"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render list view
+        function renderListView(crops) {
+            cropsContainer.className = 'list-view space-y-4';
+            cropsContainer.innerHTML = crops.map(crop => `
+                <div class="crop-card bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <div class="crop-image-container h-full">
+                        <div class="h-full bg-gray-100 flex items-center justify-center relative dark:bg-gray-700">
+                            <i class="fas fa-seedling text-4xl text-primary-600 dark:text-primary-400"></i>
+                            ${crop.quantity < 100 ? `
+                                <span class="absolute top-2 right-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full dark:bg-red-900 dark:text-red-200">
+                                    Low Stock
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="crop-details flex flex-col">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg dark:text-white">${crop.name}</h3>
+                            <span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded dark:bg-primary-900 dark:text-primary-200">${crop.type}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">
+                            <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>
+                            ${crop.region}
+                        </p>
+                        <p class="text-sm text-gray-500 mb-4 dark:text-gray-400">${crop.description || 'No description available'}</p>
+                        
+                        <div class="grid grid-cols-3 gap-4 mt-auto">
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Available:</span>
+                                <span class="block font-medium dark:text-white">${crop.quantity} kg</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Price:</span>
+                                <span class="block font-bold text-primary-600 dark:text-primary-400">৳${crop.price}</span>
+                            </div>
+                            <div class="flex items-end justify-end">
+                                <button class="add-to-cart bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center"
+                                        data-id="${crop.id}">
+                                    <i class="fas fa-cart-plus mr-2"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Set current view (grid or list)
+        function setView(view) {
+            currentView = view;
+            if (view === 'grid') {
+                gridViewBtn.classList.remove('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-300');
+                gridViewBtn.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
+                listViewBtn.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
+                listViewBtn.classList.add('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-300');
+            } else {
+                listViewBtn.classList.remove('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-300');
+                listViewBtn.classList.add('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
+                gridViewBtn.classList.remove('bg-gray-200', 'text-gray-700', 'dark:bg-gray-700', 'dark:text-gray-200');
+                gridViewBtn.classList.add('bg-gray-100', 'text-gray-500', 'dark:bg-gray-600', 'dark:text-gray-300');
+            }
+            renderCrops();
+        }
+
+        // Update pagination UI
+        function updatePagination() {
+            // Clear existing page buttons
+            const paginationContainer = document.querySelector('.flex');
+            paginationContainer.innerHTML = '';
+            
+            // Determine range of pages to show
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            // Add previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'px-3 py-1 rounded-l-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchCrops();
+                }
+            });
+            paginationContainer.appendChild(prevBtn);
+            
+            // Add page buttons
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `px-3 py-1 border-t border-b border-gray-300 ${i === currentPage ? 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200' : 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    fetchCrops();
+                });
+                paginationContainer.appendChild(pageBtn);
+            }
+            
+            // Add next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'px-3 py-1 rounded-r-md border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    fetchCrops();
+                }
+            });
+            paginationContainer.appendChild(nextBtn);
+        }
+
+        // Add item to cart
+        function addToCart(cropId) {
+            const crop = allCrops.find(c => c.id === cropId);
+            if (!crop) return;
+
+            const existingItem = cart.find(item => item.id === cropId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ 
+                    id: crop.id,
+                    name: crop.name,
+                    type: crop.type,
+                    quantity: 1,
+                    price: crop.price,
+                    region: crop.region,
+                    remaining_quantity: crop.quantity - 1
+                });
+            }
+            
+            updateCartUI();
+            showToast(`${crop.name} added to cart`);
+            getAiRecommendations();
+        }
+
+        // Update cart UI
+        function updateCartUI() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+            cartCount.classList.toggle('hidden', totalItems === 0);
+            
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-4 dark:text-gray-600"></i>
+                        <p class="text-gray-500 dark:text-gray-400">Your cart is empty</p>
+                    </div>
+                `;
+                cartTotal.textContent = '৳0';
+                return;
+            }
+            
+            cartItemsEl.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center py-3 border-b dark:border-gray-700">
+                    <div class="flex-1">
+                        <h4 class="font-medium dark:text-white">${item.name}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">${item.type} • ${item.region}</p>
+                    </div>
+                    <div class="flex items-center ml-4">
+                        <button class="decrease-quantity text-gray-500 hover:text-primary-600 px-2 dark:text-gray-400" 
+                                data-id="${item.id}">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span class="quantity-display mx-2 w-8 text-center dark:text-white">${item.quantity}</span>
+                        <button class="increase-quantity text-gray-500 hover:text-primary-600 px-2 dark:text-gray-400" 
+                                data-id="${item.id}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <span class="ml-4 font-medium w-20 text-right dark:text-white">৳${(item.quantity * item.price).toFixed(2)}</span>
+                        <button class="remove-from-cart text-red-500 hover:text-red-700 ml-4 dark:text-red-400" 
+                                data-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            const total = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            cartTotal.textContent = `৳${total.toFixed(2)}`;
+        }
+
+        // Get AI recommendations
+        async function getAiRecommendations() {
+            if (cart.length === 0) {
+                aiSection.innerHTML = `
+                    <div class="bg-blue-50 rounded-lg p-6 dark:bg-blue-900 dark:bg-opacity-20">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold flex items-center dark:text-white">
+                                <i class="fas fa-robot text-blue-500 mr-2"></i> AI-Powered Recommendations
+                            </h3>
+                        </div>
+                        <div class="text-center py-8">
+                            <i class="fas fa-robot text-4xl text-blue-400 mb-4 dark:text-blue-300"></i>
+                            <p class="text-blue-700 dark:text-blue-300">Add items to your cart to get personalized recommendations</p>
+                            <p class="text-sm text-blue-600 dark:text-blue-400 mt-2">Our AI will suggest complementary crops based on your selections</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                aiRecommendations.innerHTML = `
+                    <div class="col-span-full flex items-center justify-center py-8">
+                        <i class="fas fa-spinner fa-spin text-primary-600 text-2xl mr-3 dark:text-primary-400"></i>
+                        <span class="text-gray-600 dark:text-gray-300">Analyzing your cart with AI...</span>
+                    </div>
+                `;
+
+                const response = await fetch(`${API_BASE}/recommendations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cart: cart
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.recommendations.length > 0) {
+                    renderAiRecommendations(data.recommendations);
+                } else {
+                    aiRecommendations.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-robot text-4xl text-gray-400 mb-4 dark:text-gray-600"></i>
+                            <p class="text-gray-600 dark:text-gray-400">Could not generate recommendations at this time</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Try adding more items to your cart</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('AI Recommendation Error:', error);
+                aiRecommendations.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4 dark:text-red-600"></i>
+                        <p class="text-gray-600 dark:text-gray-400">AI service is currently unavailable</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Please try again later</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render AI recommendations
+        function renderAiRecommendations(recommendations) {
+            aiRecommendations.innerHTML = recommendations.map(crop => `
+                <div class="ai-recommendation-card bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                    <span class="ai-recommendation-badge">
+                        <i class="fas fa-bolt mr-1"></i> ${Math.round(crop.similarity_score * 100)}% Match
+                    </span>
+                    <div class="h-48 bg-gray-100 flex items-center justify-center relative dark:bg-gray-700">
+                        <i class="fas fa-seedling text-4xl text-primary-600 dark:text-primary-400"></i>
+                        ${crop.quantity < 100 ? `
+                            <span class="absolute top-2 left-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full dark:bg-red-900 dark:text-red-200">
+                                Low Stock
+                            </span>
+                        ` : ''}
+                    </div>
+                    <div class="p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg dark:text-white">${crop.name}</h3>
+                            <span class="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded dark:bg-primary-900 dark:text-primary-200">${crop.type}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-2 dark:text-gray-300">
+                            <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>
+                            ${crop.region}
+                        </p>
+                        <div class="flex justify-between items-center mt-4">
+                            <div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Price:</span>
+                                <span class="block font-bold text-primary-600 dark:text-primary-400">৳${crop.price}</span>
+                            </div>
+                            <button class="add-to-cart bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded text-sm flex items-center"
+                                    data-id="${crop.id}">
+                                <i class="fas fa-cart-plus mr-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Cart toggle
+            cartBtn.addEventListener('click', toggleCart);
+            closeCart.addEventListener('click', toggleCart);
+            
+            // View toggle buttons
+            gridViewBtn.addEventListener('click', () => setView('grid'));
+            listViewBtn.addEventListener('click', () => setView('list'));
+            
+            // Filter changes
+            regionFilter.addEventListener('change', filterCrops);
+            typeFilter.addEventListener('change', filterCrops);
+            priceFilter.addEventListener('change', filterCrops);
+            sortFilter.addEventListener('change', filterCrops);
+            mainSearch.addEventListener('input', filterCrops);
+            
+            // Checkout
+            checkoutBtn.addEventListener('click', handleCheckout);
+            
+            // Dashboard
+            dashboardBtn.addEventListener('click', showBuyerDashboard);
+            
+            // Theme toggle
+            themeToggle.addEventListener('click', toggleTheme);
+            
+            // Document click handler
+            document.addEventListener('click', handleDocumentClick);
+        }
+
+        // Toggle cart visibility
+        function toggleCart() {
+            cartSidebar.classList.toggle('translate-x-full');
+            document.body.classList.toggle('overflow-hidden');
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // Handle document clicks
+        function handleDocumentClick(e) {
+            // Add to cart
+            if (e.target.classList.contains('add-to-cart') || e.target.closest('.add-to-cart')) {
+                const btn = e.target.classList.contains('add-to-cart') ? e.target : e.target.closest('.add-to-cart');
+                const cropId = parseInt(btn.dataset.id);
+                addToCart(cropId);
+            }
+            
+            // Remove from cart
+            if (e.target.classList.contains('remove-from-cart') || e.target.closest('.remove-from-cart')) {
+                const btn = e.target.classList.contains('remove-from-cart') ? e.target : e.target.closest('.remove-from-cart');
+                const cropId = parseInt(btn.dataset.id);
+                cart = cart.filter(item => item.id !== cropId);
+                updateCartUI();
+                getAiRecommendations();
+            }
+            
+            // Increase quantity
+            if (e.target.classList.contains('increase-quantity') || e.target.closest('.increase-quantity')) {
+                const btn = e.target.classList.contains('increase-quantity') ? e.target : e.target.closest('.increase-quantity');
+                const cropId = parseInt(btn.dataset.id);
+                const item = cart.find(item => item.id === cropId);
+                if (item) {
+                    item.quantity += 1;
+                    item.remaining_quantity -= 1;
+                }
+                updateCartUI();
+                getAiRecommendations();
+            }
+            
+            // Decrease quantity
+            if (e.target.classList.contains('decrease-quantity') || e.target.closest('.decrease-quantity')) {
+                const btn = e.target.classList.contains('decrease-quantity') ? e.target : e.target.closest('.decrease-quantity');
+                const cropId = parseInt(btn.dataset.id);
+                const item = cart.find(item => item.id === cropId);
+                if (item) {
+                    item.quantity -= 1;
+                    item.remaining_quantity += 1;
+                    if (item.quantity <= 0) {
+                        cart = cart.filter(i => i.id !== cropId);
+                    }
+                }
+                updateCartUI();
+                getAiRecommendations();
+            }
+            
+            // Reset filters
+            if (e.target.id === 'reset-filters' || e.target.closest('#reset-filters')) {
+                regionFilter.value = '';
+                typeFilter.value = '';
+                priceFilter.value = '';
+                sortFilter.value = 'newest';
+                mainSearch.value = '';
+                filterCrops();
+            }
+        }
+
+        // Filter crops based on selected filters
+        function filterCrops() {
+            const region = regionFilter.value;
+            const type = typeFilter.value;
+            const priceRange = priceFilter.value;
+            const sortBy = sortFilter.value;
+            const searchTerm = mainSearch.value.toLowerCase();
+            
+            let filtered = [...allCrops];
+            
+            // Apply filters
+            if (region) {
+                filtered = filtered.filter(crop => crop.region === region);
+            }
+            if (type) {
+                filtered = filtered.filter(crop => crop.type === type);
+            }
+            if (priceRange) {
+                const [min, max] = priceRange.split('-').map(Number);
+                filtered = filtered.filter(crop => {
+                    const price = crop.price;
+                    return (max ? price >= min && price <= max : price >= min);
+                });
+            }
+            if (searchTerm) {
+                filtered = filtered.filter(crop => 
+                    crop.name.toLowerCase().includes(searchTerm) || 
+                    (crop.description && crop.description.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply sorting
+            switch (sortBy) {
+                case 'price-low':
+                    filtered.sort((a, b) => a.price - b.price);
+                    break;
+                case 'price-high':
+                    filtered.sort((a, b) => b.price - a.price);
+                    break;
+                case 'quantity':
+                    filtered.sort((a, b) => b.quantity - a.quantity);
+                    break;
+                default: // 'newest'
+                    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            }
+            
+            renderCrops(filtered);
+        }
+
+        // Handle checkout
+        async function handleCheckout() {
+            if (cart.length === 0) {
+                showToast('Your cart is empty!', 'error');
+                return;
+            }
+
+            // Show checkout modal
+            const checkoutModal = document.createElement('div');
+            checkoutModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            checkoutModal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto dark:bg-gray-800">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold dark:text-white">Checkout</h3>
+                            <button id="close-checkout-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Full Name</label>
+                                <input type="text" id="checkout-name" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="Demo User">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Phone Number</label>
+                                <input type="tel" id="checkout-phone" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" value="+8801XXXXXXXXX">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Shipping Address</label>
+                                <textarea id="checkout-address" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" rows="3">123 Farmgate, Dhaka</textarea>
+                            </div>
+                            
+                            <div class="border-t pt-4 dark:border-gray-700">
+                                <h4 class="font-bold mb-2 dark:text-white">Order Summary</h4>
+                                <div class="space-y-2 mb-4">
+                                    ${cart.map(item => `
+                                        <div class="flex justify-between dark:text-white">
+                                            <span>${item.name} x${item.quantity}</span>
+                                            <span>৳${(item.price * item.quantity).toFixed(2)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="flex justify-between font-bold border-t pt-2 dark:border-gray-700 dark:text-white">
+                                    <span>Total:</span>
+                                    <span>৳${cart.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="border-t pt-4 dark:border-gray-700">
+                                <h4 class="font-bold mb-2 dark:text-white">Payment Method</h4>
+                                <div class="space-y-3">
+                                    <label class="flex items-center space-x-3 p-3 border rounded-md dark:border-gray-700">
+                                        <input type="radio" name="payment-method" value="cash_on_delivery" checked class="rounded-full dark:bg-gray-700">
+                                        <div>
+                                            <span class="font-medium dark:text-white">Cash on Delivery</span>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Pay when you receive the order</p>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center space-x-3 p-3 border rounded-md dark:border-gray-700">
+                                        <input type="radio" name="payment-method" value="bkash" class="rounded-full dark:bg-gray-700">
+                                        <div>
+                                            <span class="font-medium dark:text-white">bKash</span>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Pay via bKash mobile payment</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button id="confirm-order-btn" class="w-full mt-6 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg">
+                                Confirm Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(checkoutModal);
+            
+            // Close modal
+            document.getElementById('close-checkout-modal').addEventListener('click', () => {
+                checkoutModal.remove();
+            });
+            
+            // Confirm order
+            document.getElementById('confirm-order-btn').addEventListener('click', async () => {
+                const shippingInfo = {
+                    name: document.getElementById('checkout-name').value,
+                    phone: document.getElementById('checkout-phone').value,
+                    address: document.getElementById('checkout-address').value,
+                    email: currentUser.email
+                };
+                
+                const paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
+                
+                try {
+                    const response = await fetch(`${API_BASE}/orders`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: currentUser.id,
+                            items: cart,
+                            shipping_info: shippingInfo,
+                            payment_method: paymentMethod
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast('Order placed successfully!', 'success');
+                        cart = [];
+                        updateCartUI();
+                        getAiRecommendations();
+                        checkoutModal.remove();
+                        toggleCart();
+                        
+                        // Show order confirmation
+                        showOrderConfirmation(data.order_id);
+                    } else {
+                        showToast(data.error || 'Failed to place order', 'error');
+                    }
+                } catch (error) {
+                    console.error('Order error:', error);
+                    showToast('Failed to place order', 'error');
+                }
+            });
+        }
+
+        // Show order confirmation
+        function showOrderConfirmation(orderId) {
+            const confirmationModal = document.createElement('div');
+            confirmationModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            confirmationModal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full dark:bg-gray-800">
+                    <div class="p-6">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-check-circle text-5xl text-green-500 mb-3"></i>
+                            <h3 class="text-xl font-bold dark:text-white">Order Confirmed!</h3>
+                            <p class="text-gray-600 mt-1 dark:text-gray-300">Your order #${orderId.slice(0, 8)} has been placed successfully.</p>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4 dark:bg-gray-700">
+                            <p class="text-center mb-2 dark:text-white">You can track your order in your dashboard.</p>
+                            <div class="flex justify-center space-x-3">
+                                <button id="view-invoice" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800">
+                                    <i class="fas fa-file-invoice mr-2"></i> View Invoice
+                                </button>
+                                <button id="go-to-dashboard" class="px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800">
+                                    <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button id="close-confirmation" class="w-full mt-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                            Continue Shopping
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(confirmationModal);
+            
+            // Close modal
+            document.getElementById('close-confirmation').addEventListener('click', () => {
+                confirmationModal.remove();
+            });
+            
+            // Go to dashboard
+            document.getElementById('go-to-dashboard').addEventListener('click', () => {
+                confirmationModal.remove();
+                showBuyerDashboard();
+            });
+            
+            // View invoice
+            document.getElementById('view-invoice').addEventListener('click', async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/orders/invoice/${orderId}`);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `invoice_${orderId}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    } else {
+                        const error = await response.json();
+                        showToast(error.error || 'Failed to download invoice', 'error');
+                    }
+                } catch (error) {
+                    console.error('Invoice download error:', error);
+                    showToast('Failed to download invoice', 'error');
+                }
+            });
+        }
+
+        // Show buyer dashboard
+        function showBuyerDashboard() {
+            // Hide main content
+            document.querySelector('main').classList.add('hidden');
+            document.getElementById('ai-section').classList.add('hidden');
+            
+            // Create dashboard container
+            const dashboard = document.createElement('div');
+            dashboard.className = 'container mx-auto px-4 py-8';
+            dashboard.id = 'buyer-dashboard';
+            dashboard.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold dark:text-white">My Dashboard</h2>
+                    <button id="back-to-shop" class="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Shop
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                        <h3 class="font-bold text-lg mb-2 dark:text-white">Recent Orders</h3>
+                        <p class="text-3xl font-bold text-primary-600 dark:text-primary-400" id="order-count">0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">orders placed</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                        <h3 class="font-bold text-lg mb-2 dark:text-white">Pending Orders</h3>
+                        <p class="text-3xl font-bold text-yellow-600 dark:text-yellow-400" id="pending-count">0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">awaiting delivery</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                        <h3 class="font-bold text-lg mb-2 dark:text-white">Total Spent</h3>
+                        <p class="text-3xl font-bold text-blue-600 dark:text-blue-400" id="total-spent">৳0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">all time</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow mb-8 dark:bg-gray-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg dark:text-white">Order History</h3>
+                        <button id="refresh-orders" class="text-primary-600 hover:text-primary-800 dark:text-primary-400">
+                            <i class="fas fa-sync-alt mr-1"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Order ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Loading orders...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 flex justify-between items-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400" id="orders-info">Showing 0 to 0 of 0 entries</div>
+                        <div class="flex space-x-1" id="orders-pagination"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Insert dashboard before footer
+            document.querySelector('footer').insertAdjacentElement('beforebegin', dashboard);
+            
+            // Load orders
+            loadUserOrders();
+            
+            // Back to shop button
+            document.getElementById('back-to-shop').addEventListener('click', () => {
+                dashboard.remove();
+                document.querySelector('main').classList.remove('hidden');
+                document.getElementById('ai-section').classList.remove('hidden');
+            });
+            
+            // Refresh orders button
+            document.getElementById('refresh-orders').addEventListener('click', loadUserOrders);
+        }
+
+        // Load user orders for dashboard
+        async function loadUserOrders() {
+            try {
+                const response = await fetch(`${API_BASE}/orders/${currentUser.id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const orders = data.data;
+                    
+                    // Update summary cards
+                    document.getElementById('order-count').textContent = data.total;
+                    document.getElementById('pending-count').textContent = 
+                        orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+                    document.getElementById('total-spent').textContent = 
+                        '৳' + orders.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2);
+                    
+                    // Update orders table
+                    const ordersTable = document.getElementById('orders-table-body');
+                    
+                    if (orders.length === 0) {
+                        ordersTable.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No orders found</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    ordersTable.innerHTML = orders.map(order => `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                #${order.id.slice(0, 8)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                ${new Date(order.order_date).toLocaleDateString()}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-white">
+                                ৳${order.total_amount.toFixed(2)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs rounded-full 
+                                    ${order.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                                      order.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 
+                                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}">
+                                    ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="view-order text-primary-600 hover:text-primary-900 mr-3 dark:text-primary-400 dark:hover:text-primary-300" data-id="${order.id}">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </button>
+                                <button class="download-invoice text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" data-id="${order.id}">
+                                    <i class="fas fa-download mr-1"></i> Invoice
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    
+                    // Update pagination info
+                    document.getElementById('orders-info').textContent = 
+                        `Showing 1 to ${orders.length} of ${data.total} entries`;
+                    
+                    // Add event listeners to view order buttons
+                    document.querySelectorAll('.view-order').forEach(btn => {
+                        btn.addEventListener('click', () => viewOrderDetails(btn.dataset.id));
+                    });
+                    
+                    // Add event listeners to download invoice buttons
+                    document.querySelectorAll('.download-invoice').forEach(btn => {
+                        btn.addEventListener('click', () => downloadInvoice(btn.dataset.id));
+                    });
+                    
+                } else {
+                    showToast(data.error || 'Failed to load orders', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showToast('Failed to load orders', 'error');
+            }
+        }
+
+        // View order details
+        function viewOrderDetails(orderId) {
+            // In a real app, you would show a modal with full order details
+            showToast(`Viewing order #${orderId}`, 'info');
+        }
+
+        // Download invoice
+        async function downloadInvoice(orderId) {
+            try {
+                const response = await fetch(`${API_BASE}/orders/invoice/${orderId}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `invoice_${orderId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Failed to download invoice', 'error');
+                }
+            } catch (error) {
+                console.error('Invoice download error:', error);
+                showToast('Failed to download invoice', 'error');
+            }
+        }
+
+        // Show loading indicator
+        function showLoading(show) {
+            const loader = document.getElementById('loading-indicator');
+            if (show) {
+                if (!loader) {
+                    const loaderDiv = document.createElement('div');
+                    loaderDiv.id = 'loading-indicator';
+                    loaderDiv.className = 'fixed top-0 left-0 w-full h-1 bg-primary-600 z-50';
+                    document.body.appendChild(loaderDiv);
+                }
+            } else {
+                if (loader) {
+                    loader.remove();
+                }
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            } z-50 transform translate-y-10 opacity-0 transition-all duration-300`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200';
+            errorDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            cropsContainer.parentNode.insertBefore(errorDiv, cropsContainer);
+        }
+    </script>
+</body>
+</html>
